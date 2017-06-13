@@ -1,0 +1,63 @@
+From 759e7c6545b247d3381add4dec3dfd81e3d0f6cd Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jos=C3=A9=20Roberto=20de=20Souza?= <jose.souza@intel.com>
+Date: Wed, 7 Jun 2017 17:37:58 -0700
+Subject: [PATCH 4/5] drivers: media: ov7251: Enable set exposure
+
+---
+ drivers/media/i2c/ov7251.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/media/i2c/ov7251.c b/drivers/media/i2c/ov7251.c
+index d8ccf1e9fe35..57293688d562 100644
+--- a/drivers/media/i2c/ov7251.c
++++ b/drivers/media/i2c/ov7251.c
+@@ -505,7 +505,7 @@ static int ov7251_set_exposure(struct v4l2_subdev *sd, int exposure,
+ 	return ret;
+ }
+ 
+-static long ov7251_s_exposure(struct v4l2_subdev *sd,
++static long ov7251_atomisp_s_exposure(struct v4l2_subdev *sd,
+ 			       struct atomisp_exposure *exposure)
+ {
+ 	int exp = exposure->integration_time[0];
+@@ -517,10 +517,9 @@ static long ov7251_s_exposure(struct v4l2_subdev *sd,
+ 
+ static long ov7251_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
+ {
+-
+ 	switch (cmd) {
+ 	case ATOMISP_IOC_S_EXPOSURE:
+-		return ov7251_s_exposure(sd, arg);
++		return ov7251_atomisp_s_exposure(sd, arg);
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -555,12 +554,15 @@ static int ov7251_q_exposure(struct v4l2_subdev *sd, s32 *value)
+ 	if (ret)
+ 		goto err;
+ 
+-	*value = reg_v + (((u32)reg_v2 << 16));
++	*value = reg_v | (((u32)reg_v2 << 16));
+ err:
+ 	return ret;
+ }
+ 
+-/* TODO: function to set exposure */
++static int ov7251_s_exposure(struct v4l2_subdev *sd, s32 value)
++{
++	return __ov7251_set_exposure(sd, value, 0, 0);
++}
+ 
+ struct ov7251_control ov7251_controls[] = {
+ 	{
+@@ -575,6 +577,7 @@ struct ov7251_control ov7251_controls[] = {
+ 			.flags = 0,
+ 		},
+ 		.query = ov7251_q_exposure,
++		.tweak = ov7251_s_exposure,
+ 	},
+ 	{
+ 		.qc = {
+-- 
+2.13.1
+
